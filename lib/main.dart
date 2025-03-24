@@ -1,6 +1,11 @@
-import 'package:flutter/cupertino.dart';
+// ignore_for_file: must_be_immutable
+
 import 'package:flutter/material.dart';
+import 'package:flutter/cupertino.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
+import 'package:mycli/Model/Currency.dart';
+import 'package:http/http.dart' as http;
+import 'dart:convert' as convert;
 
 void main() {
   runApp(Myapp());
@@ -39,6 +44,18 @@ class Myapp extends StatelessWidget {
             fontWeight: FontWeight.w600,
             color: Colors.white,
           ),
+          labelSmall: TextStyle(
+            fontFamily: 'Dana',
+            fontSize: 13,
+            fontWeight: FontWeight.w300,
+            color: Colors.green,
+          ),
+          labelMedium: TextStyle(
+            fontFamily: 'Dana',
+            fontSize: 13,
+            fontWeight: FontWeight.w300,
+            color: Colors.red,
+          ),
         ),
       ),
       debugShowCheckedModeBanner: false,
@@ -48,11 +65,45 @@ class Myapp extends StatelessWidget {
   }
 }
 
-class Home extends StatelessWidget {
-  const Home({super.key});
+class Home extends StatefulWidget {
+  Home({super.key});
+
+  @override
+  State<Home> createState() => _HomeState();
+}
+
+class _HomeState extends State<Home> {
+  List<Currency> currency = [];
+
+  Future getResponse() async {
+    String url =
+        "https://sasansafari.com/flutter/api.php?access_key=flutter123456";
+    var value = await http.get(Uri.parse(url));
+    if (currency.isEmpty) {
+      if (value.statusCode == 200) {
+        List jsonList = convert.jsonDecode(value.body);
+        if (jsonList.isNotEmpty) {
+          for (var i = 0; i < jsonList.length; i++) {
+            setState(() {
+              currency.add(
+                Currency(
+                  id: jsonList[i]["id"],
+                  title: jsonList[i]["title"],
+                  price: jsonList[i]["price"],
+                  changes: jsonList[i]["changes"],
+                  status: jsonList[i]["status"],
+                ),
+              );
+            });
+          }
+        }
+      }
+    } 
+  }
 
   @override
   Widget build(BuildContext context) {
+    getResponse();
     return Scaffold(
       backgroundColor: Color.fromARGB(255, 243, 243, 243),
       appBar: AppBar(
@@ -142,12 +193,12 @@ class Home extends StatelessWidget {
                   height: 500,
                   child: ListView.separated(
                     physics: BouncingScrollPhysics(),
-                    itemCount: 100,
+                    itemCount: currency.length,
                     // Myitems
                     itemBuilder: (BuildContext context, int position) {
                       return Padding(
                         padding: const EdgeInsets.fromLTRB(0, 8, 0, 0),
-                        child: myItem(),
+                        child: myItem(position, currency),
                       );
                     },
                     // Ads items
@@ -214,10 +265,9 @@ class Home extends StatelessWidget {
                         ),
                       ),
                       Padding(
-                        padding: const EdgeInsets.fromLTRB(20,0,0,0),
+                        padding: const EdgeInsets.fromLTRB(20, 0, 0, 0),
                         child: Text("آخرین بروزرسانی ${_getTime()}"),
                       ),
-                      
                     ],
                   ),
                 ),
@@ -234,8 +284,12 @@ class Home extends StatelessWidget {
   }
 }
 
+// ignore: camel_case_types
 class myItem extends StatelessWidget {
-  const myItem({super.key});
+  int position;
+  List<Currency> currency;
+
+  myItem(this.position, this.currency, {super.key});
 
   @override
   Widget build(BuildContext context) {
@@ -250,15 +304,28 @@ class myItem extends StatelessWidget {
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceAround,
         children: [
-          Text("دلار", style: Theme.of(context).textTheme.bodyMedium),
-          Text("100,000", style: Theme.of(context).textTheme.bodyMedium),
-          Text("+2.5", style: Theme.of(context).textTheme.bodyMedium),
+          Text(
+            currency[position].title!,
+            style: Theme.of(context).textTheme.bodyMedium,
+          ),
+          Text(
+            currency[position].price!,
+            style: Theme.of(context).textTheme.bodyMedium,
+          ),
+          Text(
+            currency[position].changes!,
+            style:
+                currency[position].status == "p"
+                    ? Theme.of(context).textTheme.labelSmall
+                    : Theme.of(context).textTheme.labelMedium,
+          ),
         ],
       ),
     );
   }
 }
 
+// ignore: camel_case_types
 class addsItem extends StatelessWidget {
   const addsItem({super.key});
 
